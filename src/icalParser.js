@@ -1,22 +1,17 @@
-
-
-
 /**
- * Based upon work by Carl Saggs - https://github.com/thybag/ (v0.2)
+ * Originally based upon work by Carl Saggs (v0.2) - https://github.com/thybag/JavaScript-Ical-Parser/
  */
-function icalParser(feed_url, callback){
-    //store of unproccesed data.
-    this.raw_data = null;
-    //Store of proccessed data.
-    this.events = [];
+function icalParser(icalUrl, callback){
+    var rawData = null; //Store of unprocessed data.
+    var events = [];    //Store of processed data.
 
     /**
      * loadFile
-     * Using AJAX to load the requested .ics file, passing it to the callback when completed.
+     * Using AJAX to load the requested .ics file, passing it to the success function when completed.
      * @param url URL of .ics file
-     * @param callback Function to call on completion.
+     * @param success Function to call on successful completion.
      */
-    this.loadFile = function(url, callback){
+    function loadFile(url, success) {
         //Create request object
         try {
             xmlhttp = window.XMLHttpRequest?new XMLHttpRequest(): new ActiveXObject("Microsoft.XMLHTTP");
@@ -26,13 +21,13 @@ function icalParser(feed_url, callback){
         //Grab file
         xmlhttp.onreadystatechange = function(){
             if ((xmlhttp.readyState == 4) && (xmlhttp.status == 200)) {
-                //On success, run callback.
-                callback(xmlhttp.responseText);
+                //On success, run success.
+                success(xmlhttp.responseText);
             }
         };
         xmlhttp.open("GET", url, true);
         xmlhttp.send(null);
-    };
+    }
 
     /**
      * makeDate
@@ -40,7 +35,7 @@ function icalParser(feed_url, callback){
      * @param  icalDate { String }
      * @return dt object, includes javascript Date + day name, hour/minutes/day/month/year etc.
      */
-    this.makeDate = function(icalDate){
+    function makeDate(icalDate) {
         //break date apart
         var dt =  {
             year: icalDate.substr(0,4),
@@ -55,7 +50,7 @@ function icalParser(feed_url, callback){
         dt.dayname =["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][dt.date.getDay()];
 
         return dt;
-    };
+    }
 
     /**
      * parseICAL
@@ -63,9 +58,9 @@ function icalParser(feed_url, callback){
      *
      * @param data Raw ICAL data
      */
-    this.parseICAL = function(data){
+    function parseICAL(data) {
         //Ensure cal is empty
-        this.events = [];
+        events = [];
 
         //Clean string and split the file so we can handle it (line by line)
         cal_array = data.replace(new RegExp( "\\r", "g" ), "").split("\n");
@@ -84,7 +79,7 @@ function icalParser(feed_url, callback){
             //If we encounter end event, complete the object and add it to our events array then clear it for reuse.
             if(in_event && ln == 'END:VEVENT'){
                 in_event = false;
-                this.events.push(cur_event);
+                events.push(cur_event);
                 cur_event = null;
             }
             //If we are in an event
@@ -97,7 +92,7 @@ function icalParser(feed_url, callback){
 
                 //If the type is a start date, proccess it and store details
                 if(type =='DTSTART'){
-                    dt = this.makeDate(val);
+                    dt = makeDate(val);
                     val = dt.date;
                     //These are helpful for display
                     cur_event.start_time = dt.hour+':'+dt.minute;
@@ -106,7 +101,7 @@ function icalParser(feed_url, callback){
                 }
                 //If the type is an end date, do the same as above
                 if(type =='DTEND'){
-                    dt = this.makeDate(val);
+                    dt = makeDate(val);
                     val = dt.date;
                     //These are helpful for display
                     cur_event.end_time = dt.hour+':'+dt.minute;
@@ -114,27 +109,29 @@ function icalParser(feed_url, callback){
                     cur_event.day = dt.dayname;
                 }
                 //Convert timestamp
-                if(type =='DTSTAMP') val = this.makeDate(val).date;
+                if(type =='DTSTAMP') val = makeDate(val).date;
 
                 //Add the value to our event object.
                 cur_event[type] = val;
             }
         }
         //Run this to finish proccessing our Events.
-        this.complete();
-    };
+        complete();
+    }
+
     /**
      * complete
      * Sort all events in to a sensible order and run the original callback
      */
-    this.complete = function(){
+    function complete() {
         //Sort the data so its in date order.
-        this.events.sort(function(a,b){
+        events.sort(function(a,b){
             return a.DTSTART-b.DTSTART;
         });
         //Run callback method, if was defined. (return self)
         if(typeof callback == 'function') callback(this);
-    };
+    }
+
     /**
      * getEvents
      * return all events found in the ical file.
@@ -142,7 +139,7 @@ function icalParser(feed_url, callback){
      * @return list of events objects
      */
     this.getEvents = function(){
-        return this.events;
+        return events;
     };
 
     /**
@@ -154,33 +151,17 @@ function icalParser(feed_url, callback){
     this.getFutureEvents = function(){
         var future_events = [], current_date = new Date();
 
-        this.events.forEach(function(itm){
+        events.forEach(function(itm){
             //If the event starts after the current time, add it to the array to return.
             if(itm.DTSTART > current_date) future_events.push(itm);
         });
         return future_events;
     };
 
-    /**
-     * load
-     * load a new ICAL file.
-     *
-     * @param ical file url
-     */
-    this.load = function(ical_file){
-        var tmp_this = this;
-        this.raw_data = null;
-        this.loadFile(ical_file, function(data){
-            //if the file loads, store the data and invoke the parser
-            tmp_this.raw_data = data;
-            tmp_this.parseICAL(data);
-        });
-    };
-
-    //Store this so we can use it in the callback from the load function.
-    var tmp_this = this;
-    //Store the feed url
-    this.feed_url = feed_url;
     //Load the file
-    this.load(this.feed_url);
+    loadFile(icalUrl, function(data){
+        //if the file loads, store the data and invoke the parser
+        rawData = data;
+        parseICAL(data);
+    });
 }
