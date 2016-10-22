@@ -1,12 +1,10 @@
+
+
+
 /**
- * Javascript ical Parser
- * Proof of concept method of reading icalendar (.ics) files with javascript.
- *
- * @author: Carl Saggs
- * @source: https://github.com/thybag/
- * @version: 0.2
+ * Based upon work by Carl Saggs - https://github.com/thybag/ (v0.2)
  */
-function ical_parser(feed_url, callback){
+function icalParser(feed_url, callback){
     //store of unproccesed data.
     this.raw_data = null;
     //Store of proccessed data.
@@ -20,7 +18,11 @@ function ical_parser(feed_url, callback){
      */
     this.loadFile = function(url, callback){
         //Create request object
-        try {xmlhttp = window.XMLHttpRequest?new XMLHttpRequest(): new ActiveXObject("Microsoft.XMLHTTP");}  catch (e) { }
+        try {
+            xmlhttp = window.XMLHttpRequest?new XMLHttpRequest(): new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        catch (e) {}
+
         //Grab file
         xmlhttp.onreadystatechange = function(){
             if ((xmlhttp.readyState == 4) && (xmlhttp.status == 200)) {
@@ -35,17 +37,17 @@ function ical_parser(feed_url, callback){
     /**
      * makeDate
      * Convert the dateformat used by ICalendar in to one more suitable for javascript.
-     * @param String ical_date
+     * @param  icalDate { String }
      * @return dt object, includes javascript Date + day name, hour/minutes/day/month/year etc.
      */
-    this.makeDate = function(ical_date){
+    this.makeDate = function(icalDate){
         //break date apart
         var dt =  {
-            year: ical_date.substr(0,4),
-            month: ical_date.substr(4,2),
-            day: ical_date.substr(6,2),
-            hour: ical_date.substr(9,2),
-            minute: ical_date.substr(11,2)
+            year: icalDate.substr(0,4),
+            month: icalDate.substr(4,2),
+            day: icalDate.substr(6,2),
+            hour: icalDate.substr(9,2),
+            minute: icalDate.substr(11,2)
         };
         //Create JS date (months start at 0 in JS - don't ask)
         dt.date = new Date(dt.year, (dt.month-1), dt.day, dt.hour, dt.minute);
