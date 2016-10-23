@@ -5,6 +5,8 @@ function icalParser(icalUrl, callback){
     var rawData = null; //Store of unprocessed data.
     var events = [];    //Store of processed data.
 
+    //==================================================================================================================
+
     /**
      * loadFile
      * Using AJAX to load the requested .ics file, passing it to the success function when completed.
@@ -51,6 +53,8 @@ function icalParser(icalUrl, callback){
 
         return dt;
     }
+
+    //==================================================================================================================
 
     /**
      * parseICAL
@@ -115,22 +119,17 @@ function icalParser(icalUrl, callback){
                 cur_event[type] = val;
             }
         }
-        //Run this to finish proccessing our Events.
-        complete();
-    }
 
-    /**
-     * complete
-     * Sort all events in to a sensible order and run the original callback
-     */
-    function complete() {
         //Sort the data so its in date order.
         events.sort(function(a,b){
             return a.DTSTART-b.DTSTART;
         });
+
         //Run callback method, if was defined. (return self)
         if(typeof callback == 'function') callback(this);
     }
+
+    //==================================================================================================================
 
     /**
      * getEvents
@@ -138,9 +137,9 @@ function icalParser(icalUrl, callback){
      *
      * @return list of events objects
      */
-    this.getEvents = function(){
+    function getEvents() {
         return events;
-    };
+    }
 
     /**
      * getFutureEvents
@@ -148,15 +147,53 @@ function icalParser(icalUrl, callback){
      *
      * @return list of events objects
      */
-    this.getFutureEvents = function(){
-        var future_events = [], current_date = new Date();
+    function getFutureEvents() {
+        var now = new Date();
 
-        events.forEach(function(itm){
-            //If the event starts after the current time, add it to the array to return.
-            if(itm.DTSTART > current_date) future_events.push(itm);
+        return events.filter(function(itm){
+            return itm.DTSTART > now;
         });
-        return future_events;
-    };
+    }
+
+    function getThisWeekEvents() {
+        var start = calcWeekStart();
+        var end = calcWeekEnd();
+        return events.filter(function(itm){
+            return (itm.DTSTART >= start) && (itm.DTSTART < end);
+        });
+    }
+
+    // Avoiding maths....
+    // 86400000 = 1 day in milliseconds
+
+    function calcDayStart() {
+        var day = new Date();
+        day.setHours(0,0,0,0);
+        return day;
+    }
+
+    function calcWeekStart() {
+        var week = calcDayStart();
+        week.setUTCMilliseconds(week.getUTCMilliseconds() - (86400000 * week.getDay()));
+        return week;
+    }
+
+    function calcWeekEnd() {
+        var week = calcWeekStart();
+        week.setUTCMilliseconds(week.getUTCMilliseconds() + (86400000 * 7));
+        return week;
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    this.getEvents = getEvents;
+    this.getFutureEvents = getFutureEvents;
+    this.getThisWeekEvents = getThisWeekEvents;
+    this.calcDayStart = calcDayStart;
+    this.calcWeekStart = calcWeekStart;
+    this.calcWeekEnd = calcWeekEnd;
+
+    //==================================================================================================================
 
     //Load the file
     loadFile(icalUrl, function(data){
