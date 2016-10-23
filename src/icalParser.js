@@ -149,7 +149,6 @@ function icalParser(icalUrl, callback){
      */
     function getFutureEvents() {
         var now = new Date();
-
         return events.filter(function(itm){
             return itm.DTSTART > now;
         });
@@ -166,20 +165,20 @@ function icalParser(icalUrl, callback){
     // Avoiding maths....
     // 86400000 = 1 day in milliseconds
 
-    function calcDayStart() {
-        var day = new Date();
+    function calcDayStart(day) {
+        day = day ? day : new Date();
         day.setHours(0,0,0,0);
         return day;
     }
 
-    function calcWeekStart() {
-        var week = calcDayStart();
+    function calcWeekStart(day) {
+        var week = day ? calcDayStart(day) : calcDayStart();
         week.setUTCMilliseconds(week.getUTCMilliseconds() - (86400000 * week.getDay()));
         return week;
     }
 
-    function calcWeekEnd() {
-        var week = calcWeekStart();
+    function calcWeekEnd(day) {
+        var week = day ? calcWeekStart(day) : calcWeekStart();
         week.setUTCMilliseconds(week.getUTCMilliseconds() + (86400000 * 7));
         return week;
     }
