@@ -69,10 +69,10 @@ function icalParser(icalUrl, callback){
         //Clean string and split the file so we can handle it (line by line)
         cal_array = data.replace(new RegExp( "\\r", "g" ), "").split("\n");
 
-        //Keep track of when we are activly parsing an event
-        var in_event = false;
-        //Use as a holder for the current event being proccessed.
-        var cur_event = null;
+        var in_event = false;       //Keep track of when we are activly parsing an event
+        var cur_event = null;       //Use as a holder for the current event being processed.
+        var ln;                     //Placeholder for current line being worked on
+
         for(var i=0;i<cal_array.length;i++){
             ln = cal_array[i];
             //If we encounted a new Event, create a blank event object + set in event options.
@@ -89,10 +89,15 @@ function icalParser(icalUrl, callback){
             //If we are in an event
             if(in_event){
                 //Split the item based on the first ":"
-                idx = ln.indexOf(':');
+                var idx = ln.indexOf(':');
                 //Apply trimming to values to reduce risks of badly formatted ical files.
-                type = ln.substr(0,idx).replace(/^\s\s*/, '').replace(/\s\s*$/, '');//Trim
-                val = ln.substr(idx+1,ln.length-(idx+1)).replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+                var type = ln.substr(0,idx).trim();
+                var val = ln.substr(idx+1,ln.length-(idx+1)).trim();
+                //Test for timezone and other stuff
+                if (type.indexOf(';') >= 0) {
+                    var split = type.split(';');
+                    type = split[0];
+                }
 
                 //If the type is a start date, proccess it and store details
                 if(type =='DTSTART'){
@@ -113,7 +118,9 @@ function icalParser(icalUrl, callback){
                     cur_event.day = dt.dayname;
                 }
                 //Convert timestamp
-                if(type =='DTSTAMP') val = makeDate(val).date;
+                if(type =='DTSTAMP') {
+                    val = makeDate(val).date;
+                }
 
                 //Add the value to our event object.
                 cur_event[type] = val;
@@ -157,7 +164,8 @@ function icalParser(icalUrl, callback){
     function getThisWeekEvents() {
         var start = calcWeekStart();
         var end = calcWeekEnd();
-        return events.filter(function(itm){
+        return events.filter(function(itm, idx){
+            console.debug (idx + ':' + itm.DTSTART + ' - ' + ((itm.DTSTART >= start) && (itm.DTSTART < end)));
             return (itm.DTSTART >= start) && (itm.DTSTART < end);
         });
     }
